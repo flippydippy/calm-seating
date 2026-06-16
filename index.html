@@ -1,0 +1,1846 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calm Seating — Seating Chart</title>
+<style>
+  /* Vipassana design standards: Noto Sans (body) + Amiri (headings). */
+  @font-face { font-family:"Noto Sans"; src:url("assets/fonts/NotoSans.ttf") format("truetype"); font-weight:100 900; font-display:swap; }
+  @font-face { font-family:"Amiri"; src:url("assets/fonts/Amiri-Regular.woff2") format("woff2"); font-weight:400; font-display:swap; }
+  @font-face { font-family:"Amiri"; src:url("assets/fonts/Amiri-Bold.woff2") format("woff2"); font-weight:700; font-display:swap; }
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #FBF9F5;          /* gold 5% tint */
+    --panel: #ffffff;
+    --box: #F4F5F7;         /* dark-blue 5% tint — seat box */
+    --box-border: #1E3461;
+    --ink: #212121;         /* off-black */
+    --muted: #4F4D47;       /* grey — secondary text */
+    --accent: #1E3461;      /* dark blue — buttons / primary */
+    --gold: #B78730;        /* light gold — accents */
+    --gold-dark: #9C6B14;   /* dark gold — headings on light bg */
+    --heading: "Amiri", Georgia, "Times New Roman", serif;
+    --shadow: 0 1px 0 rgba(0,0,0,.06);
+    --radius: 14px;
+    --gap: 12px;
+    --header-h: 50px;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font: 15px/1.5 "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .setup-card h2, header.app-header h1 {
+    font-family: var(--heading); font-weight: 700; letter-spacing: .2px;
+  }
+  .setup-card h2 { color: var(--gold-dark); }
+  header.app-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 12px 20px;
+    background: var(--panel);
+    border-bottom: 2px solid var(--gold);
+    position: sticky; top: 0; z-index: 10;
+  }
+  header.app-header h1 {
+    font-size: 16px; font-weight: 600; margin: 0; letter-spacing: .2px;
+  }
+  header.app-header .course-tag {
+    margin-right: auto; margin-left: 14px; padding-left: 14px;
+    border-left: 1px solid rgba(0,0,0,.14);
+    font-size: 13px; color: var(--muted); font-weight: 500;
+  }
+  header.app-header .course-tag:empty { display: none; }
+  header.app-header .actions { display: flex; gap: 8px; }
+  header.app-header button {
+    font: inherit; padding: 6px 12px; border-radius: 8px;
+    border: 1px solid rgba(0,0,0,.12); background: #fff; cursor: pointer;
+  }
+  header.app-header button:hover { background: #f6f6f6; }
+  main.app-main {
+    display: block;
+    padding: var(--gap);
+    min-height: calc(100dvh - var(--header-h));
+  }
+  section.chart-area {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 12px;
+    min-height: 400px;
+  }
+  .placeholder {
+    display: flex; align-items: center; justify-content: center;
+    min-height: 60vh; color: var(--muted); font-size: 14px;
+    border: 1px dashed rgba(0,0,0,.18); border-radius: var(--radius);
+    background: rgba(255,255,255,.4);
+  }
+
+  /* --- Setup screen --- */
+  .setup-card {
+    max-width: 520px;
+    margin: 32px auto;
+    background: var(--panel);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+  }
+  .setup-card h2 {
+    font-size: 18px; font-weight: 600; margin: 0 0 4px;
+  }
+  .setup-card .lede {
+    color: var(--muted); font-size: 14px; margin: 0 0 20px;
+  }
+  .setup-form { display: grid; gap: 18px; }
+  .field { display: grid; gap: 6px; }
+  .field > label {
+    font-size: 13px; font-weight: 600; color: var(--ink);
+  }
+  .segmented {
+    display: inline-grid; grid-template-columns: 1fr 1fr;
+    background: #eee; border-radius: 10px; padding: 4px; gap: 4px;
+    width: fit-content;
+  }
+  .segmented button {
+    appearance: none; border: none; background: transparent;
+    font: inherit; padding: 6px 18px; border-radius: 7px; cursor: pointer;
+    color: var(--ink);
+  }
+  .segmented button[aria-pressed="true"] {
+    background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    font-weight: 600;
+  }
+  .segmented button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .is-hidden { display: none !important; }
+
+  /* --- Print: chart + Dhamma Seat only --- */
+  @media print {
+    @page { size: landscape; margin: 1cm; }
+    html, body { background: #fff !important; }
+    header.app-header,
+    .setup-card,
+    .chart-hint,
+    .removed-panel,
+    .seat-head .drag-handle,
+    .seat-head .head-right { display: none !important; }
+    main.app-main { padding: 0 !important; min-height: 0 !important; }
+    section.chart-area {
+      background: #fff !important; padding: 0 !important;
+      overflow: visible !important; box-shadow: none !important;
+    }
+    .seat-grid-wrap { min-width: 0 !important; }
+    /* Force-hide all dashed/duplicate decoration for print clarity. */
+    .seat { box-shadow: none !important; }
+    .seat--duplicate { border-style: solid !important; }
+    /* Removed students must not leak into the print job. */
+    .seat--removed-source { display: none !important; }
+  }
+  .number-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field input[type="number"] {
+    font: inherit; padding: 8px 10px; border-radius: 8px;
+    border: 1px solid rgba(0,0,0,.18); background: #fff;
+    width: 100%;
+  }
+  .field input[type="number"][aria-invalid="true"] {
+    border-color: #c0392b;
+    box-shadow: 0 0 0 2px rgba(192,57,43,.15);
+  }
+  .field .hint { font-size: 12px; color: var(--muted); }
+  .field .error { font-size: 12px; color: #c0392b; min-height: 1em; }
+  .roster-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .roster-row select {
+    font: inherit; padding: 9px 12px; border-radius: 10px;
+    border: 1px solid rgba(0,0,0,.18); background: #fff; color: var(--ink);
+    flex: 1 1 220px; min-width: 180px; cursor: pointer;
+  }
+  .roster-row button {
+    appearance: none; cursor: pointer; font: inherit;
+    padding: 9px 16px; border-radius: 10px;
+    background: transparent; color: var(--ink); border: 1px solid rgba(0,0,0,.18);
+  }
+  .roster-row button:hover { background: rgba(0,0,0,.04); }
+  #roster-status { margin-top: 6px; }
+  #roster-status .ok { color: var(--accent); font-weight: 600; }
+  .preview {
+    background: rgba(42,111,79,.08);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+  .preview .row { display: flex; justify-content: space-between; padding: 2px 0; }
+  .preview .row .k { color: var(--muted); }
+  .preview .warn { color: #b15a00; font-weight: 600; }
+  .submit-row { display: flex; justify-content: flex-end; gap: 10px; }
+  .submit-row button {
+    appearance: none; border: none; cursor: pointer; font: inherit;
+    padding: 10px 18px; border-radius: 10px;
+    background: var(--accent); color: #fff; font-weight: 600;
+  }
+  .submit-row button[disabled] { opacity: .5; cursor: not-allowed; }
+  .submit-row button:not([disabled]):hover { filter: brightness(.95); }
+  .submit-row button.ghost {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid rgba(0,0,0,.18);
+  }
+  .submit-row button.ghost:hover { background: #f6f6f6; filter: none; }
+  /* Subtle hint line below the chart */
+  .chart-hint {
+    color: var(--muted); font-size: 12px;
+    padding: 6px 12px 0;
+    text-align: center;
+  }
+
+  /* --- Seating grid --- */
+  .chart-area { overflow-x: auto; }
+  .seat-grid-wrap {
+    display: inline-block;
+    min-width: 100%;
+  }
+  .seat-grid {
+    display: grid;
+    gap: 10px;
+    padding: 8px;
+  }
+  .seat {
+    position: relative;
+    background: var(--box);
+    border: 1px solid var(--box-border);
+    border-radius: var(--radius);
+    padding: 8px 10px 10px;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 4px;
+    overflow: hidden;
+    color: var(--ink);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .seat--old { border-width: 3px; }
+  .seat--new { border-width: 1px; }
+  .seat--empty { background: #ebebeb; border-style: dashed; opacity: .9; }
+  /* Extra seat at the end of a row: very thick top edge, regular sides. */
+  .seat--extra { border-top-width: 6px !important; border-top-style: solid !important; }
+  /* Duplicates created via shift-drag: dashed borders on both copies. */
+  .seat--duplicate { border-style: dashed; }
+  /* Drag affordances */
+  .seat { cursor: grab; user-select: none; -webkit-user-select: none; }
+  .seat:active { cursor: grabbing; }
+  .seat--dragging { opacity: .35; }
+  /* Drag preview ("ghost") that follows the cursor while a drag is in progress.
+     Clone of the source seat/chip, lifted with a shadow and a slight tilt. */
+  .drag-ghost {
+    position: fixed;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: .92;
+    transform: rotate(-1.5deg);
+    box-shadow: 0 14px 28px rgba(0,0,0,.22), 0 6px 12px rgba(0,0,0,.18);
+    cursor: grabbing;
+    margin: 0;
+  }
+  .drag-ghost .seat-plus, .drag-ghost .head-right { display: none !important; }
+  .seat--dragover {
+    outline: 3px solid var(--accent);
+    outline-offset: -3px;
+    background: rgba(42,111,79,.16);
+  }
+  .seat--blocked {
+    outline: 3px solid #c0392b;
+    outline-offset: -3px;
+    background: rgba(192,57,43,.10);
+    cursor: not-allowed;
+  }
+  @keyframes seat-shake {
+    0%,100% { transform: translateX(0); }
+    20%,60% { transform: translateX(-6px); }
+    40%,80% { transform: translateX(6px); }
+  }
+  .seat--shake { animation: seat-shake .35s ease-in-out; }
+
+  /* Side plus buttons — only visible on hover. Click to insert a new empty
+     box on that side (fills an X'd hole or extends the grid). */
+  .seat-plus {
+    position: absolute;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    background: var(--accent);
+    color: #fff;
+    font: 600 13px/16px -apple-system, sans-serif;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .12s ease;
+    z-index: 2;
+    padding: 0;
+  }
+  .seat:hover .seat-plus,
+  .seat-plus:focus-visible { opacity: 1; }
+  .seat-plus--t { top: -9px;    left: 50%;   transform: translateX(-50%); }
+  .seat-plus--r { top: 50%;     right: -9px; transform: translateY(-50%); }
+  .seat-plus--b { bottom: -9px; left: 50%;   transform: translateX(-50%); }
+  .seat-plus--l { top: 50%;     left: -9px;  transform: translateY(-50%); }
+  @media print { .seat-plus { display: none !important; } }
+  .seat-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink);
+  }
+  .seat-head .label {
+    font-weight: 600; font-size: 14px; letter-spacing: .2px;
+    text-align: left;
+  }
+  .seat-head .head-right { display: inline-flex; gap: 0; align-items: center; }
+  .seat-head .head-right .icon-btn { padding: 1px; }
+  .icon-btn {
+    appearance: none; border: none; background: transparent;
+    padding: 2px; cursor: grab; color: rgba(0,0,0,.55);
+    border-radius: 6px; line-height: 0;
+  }
+  .icon-btn:hover { background: rgba(0,0,0,.06); color: rgba(0,0,0,.8); }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pin-btn { cursor: pointer; }
+  .pin-btn[disabled] { opacity: .25; cursor: not-allowed; }
+  /* Pinned state is signalled by the pin icon alone (filled + accent color). */
+  .seat--pinned { cursor: default; }
+  .seat--pinned .pin-btn { color: var(--accent); }
+  .seat--pinned .pin-btn:hover { background: rgba(42,111,79,.12); }
+  .seat-body {
+    text-align: left;
+    align-self: center;
+    padding: 2px 0;
+    min-width: 0;
+  }
+  .seat-body .first {
+    font-size: 15px; font-weight: 600; line-height: 1.15;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .seat-body .last {
+    font-size: 13px; line-height: 1.15; color: var(--ink);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .seat-stats {
+    display: flex; justify-content: flex-start; flex-wrap: wrap;
+    gap: 8px;
+    font-size: 11px; color: var(--muted); line-height: 1.1;
+    text-align: left;
+    padding-right: 26px;   /* leave room for the age in the bottom-right corner */
+  }
+  .seat-stats span { white-space: nowrap; }
+  /* Student age, bottom-right corner of the box. */
+  .seat-age {
+    position: absolute; right: 10px; bottom: 8px;
+    font-size: 11px; font-weight: 700; color: var(--gold-dark);
+    line-height: 1; pointer-events: none;
+  }
+  .seat-note {
+    font-size: 11px; color: var(--muted); font-style: italic;
+    line-height: 1.2; word-break: break-word; margin-top: 2px;
+    text-align: left;
+  }
+  .seat--empty .seat-body { color: var(--muted); font-size: 12px; }
+  /* Inline name entry on an empty (editable) seat */
+  .seat-name-input {
+    border: none; background: transparent; outline: none;
+    width: 100%; padding: 0; margin: 0;
+    font: inherit; font-size: 15px; font-weight: 600;
+    color: var(--ink);
+  }
+  .seat-name-input::placeholder { color: var(--muted); font-weight: 400; font-style: italic; }
+  .seat-name-input:focus { outline: 1px dashed var(--muted); outline-offset: 2px; }
+
+  /* Removed students strip — sits between the header and the chart. */
+  .removed-panel {
+    background: var(--panel);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    margin-bottom: var(--gap);
+    box-shadow: var(--shadow);
+  }
+  .removed-panel.is-empty { display: none; }
+  .removed-panel h3 {
+    margin: 0 0 8px;
+    font-size: 11px; font-weight: 600;
+    color: var(--muted); text-transform: uppercase; letter-spacing: .8px;
+  }
+  .removed-list {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .removed-chip {
+    background: #fff;
+    border: 2px dashed #c0392b;
+    border-radius: 10px;
+    padding: 6px 10px;
+    min-width: 90px;
+    opacity: .65;
+    color: var(--ink);
+    cursor: grab;
+    user-select: none; -webkit-user-select: none;
+    line-height: 1.15;
+  }
+  .removed-chip:active { cursor: grabbing; }
+  .removed-chip.is-dragging { opacity: .35; }
+  .removed-chip .rc-first { font-weight: 600; font-size: 13px; }
+  .removed-chip .rc-last  { font-size: 12px; }
+
+  /* Dhamma Seat label: sits below the bottom row, aligned to A1's column */
+  .dhamma-row {
+    display: grid;
+    gap: 10px;
+    padding: 14px 8px 4px;
+  }
+  .dhamma-label {
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink);
+    text-align: center;
+    letter-spacing: .3px;
+  }
+
+  /* Header chart actions */
+  header.app-header .actions button.subtle {
+    background: transparent; border: 1px solid rgba(0,0,0,.15);
+  }
+  header.app-header .actions button.subtle:hover { background: #f6f6f6; }
+  header.app-header .actions button.subtle[aria-pressed="true"] {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  header.app-header .actions button.subtle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---- auth gating: hide the app until logged in (no flash) ---- */
+  html:not([data-authed="1"]) #app-root { display: none; }
+  #login-overlay { display: none; }
+  html:not([data-authed="1"]) #login-overlay {
+    display: flex; position: fixed; inset: 0; z-index: 1000;
+    align-items: center; justify-content: center; background: var(--bg); padding: 24px;
+  }
+  .login-card {
+    background: var(--panel); border-radius: var(--radius);
+    box-shadow: 0 8px 40px rgba(30,52,97,.12);
+    padding: 32px 30px; width: 100%; max-width: 380px; text-align: center;
+  }
+  .login-logo { width: 230px; max-width: 80%; height: auto; margin: 0 auto 16px; display: block; }
+  .login-card h2 { margin: 0 0 4px; color: var(--gold-dark); font-size: 22px; }
+  .login-card .lede { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+  #login-form { text-align: left; display: flex; flex-direction: column; }
+  #login-form label { font-size: 12px; font-weight: 600; color: var(--ink); margin: 10px 0 4px; }
+  #login-form input {
+    font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,.2); background: #fff;
+  }
+  #login-form input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #login-form button[type=submit] {
+    margin-top: 18px; appearance: none; border: none; cursor: pointer; font: inherit;
+    padding: 11px 18px; border-radius: 10px; background: var(--accent); color: #fff; font-weight: 600;
+  }
+  #login-form button[type=submit]:hover { filter: brightness(1.15); }
+  #login-error { color: #c0392b; font-size: 13px; min-height: 1.1em; margin-top: 8px; }
+
+  /* ---- header brand + user menu ---- */
+  header.app-header .brand-logo { height: 26px; width: auto; flex: 0 0 auto; }
+  header.app-header h1 { font-size: 15px; color: var(--gold-dark); white-space: nowrap; }
+  #user-menu { display: flex; align-items: center; gap: 8px; margin-left: 8px; }
+  #user-menu #who { font-size: 12px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  #user-menu select, #user-menu button {
+    font: inherit; font-size: 13px; padding: 6px 10px; border-radius: 8px;
+    border: 1px solid rgba(0,0,0,.18); background: #fff; color: var(--ink); cursor: pointer;
+  }
+  #user-menu button:hover { background: #f6f6f6; }
+  #admin-tools { display: flex; align-items: center; gap: 6px; }
+  #admin-tools[hidden] { display: none; }
+
+  /* ---- upload control ---- */
+  .roster-row #upload-btn { background: var(--gold); color: #fff; border: none; font-weight: 600; }
+  .roster-row #upload-btn:hover { background: var(--gold-dark); }
+  #upload-status { margin-top: 6px; font-size: 12px; color: var(--muted); min-height: 1em; }
+  .empty-hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+</style>
+</head>
+<body>
+<!-- ===== Login gate (static client-side; see HOSTED-APP-PLAN.md) ===== -->
+<div id="login-overlay">
+  <div class="login-card">
+    <img class="login-logo" src="assets/logos/logo-centre.svg" alt="Vipassana Meditation as Taught by S.N. Goenka, in the Tradition of Sayagyi U Ba Khin">
+    <h2>Calm Seating</h2>
+    <p class="lede">Sign in to build seating charts.</p>
+    <form id="login-form" novalidate>
+      <label for="login-user">Username</label>
+      <input id="login-user" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <label for="login-pass">Password</label>
+      <input id="login-pass" type="password" autocomplete="current-password" required>
+      <div class="error" id="login-error" aria-live="polite"></div>
+      <button type="submit">Log in</button>
+    </form>
+  </div>
+</div>
+
+<div id="app-root">
+<header class="app-header">
+  <img class="brand-logo" src="assets/logos/logo-left.svg" alt="Vipassana Meditation as Taught by S.N. Goenka">
+  <h1 tabindex="-1">Calm Seating</h1>
+  <span class="course-tag" id="course-tag" aria-live="polite"></span>
+  <div class="actions" id="chart-actions">
+    <button type="button" class="subtle is-hidden" id="print-btn" title="Print just the chart and Dhamma Seat">Print</button>
+    <button type="button" class="subtle is-hidden" id="pin-all-btn" title="Pin or unpin every seat">Pin all</button>
+    <button type="button" class="subtle is-hidden" id="reset-btn" title="Refill every seat from the original sort (sat-count desc, then alphabetical)">Reset</button>
+    <button type="button" class="subtle is-hidden" id="flip-btn" aria-pressed="false" title="Mirror the chart horizontally">
+      <span aria-hidden="true" style="display:inline-flex;vertical-align:-3px;margin-right:6px">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12h18"/><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/>
+        </svg>
+      </span>
+      Flip
+    </button>
+    <button type="button" class="subtle is-hidden" id="edit-setup-btn">Edit setup</button>
+  </div>
+  <div id="user-menu">
+    <span id="who"></span>
+    <span id="admin-tools" hidden>
+      <label for="viewas-select" style="font-size:12px;color:var(--muted)">View&nbsp;as</label>
+      <select id="viewas-select" title="View another user's saved courses (on this computer)"></select>
+      <button type="button" id="import-btn" title="Import a course file a user exported">Import</button>
+      <input type="file" id="import-input" accept=".json,application/json" hidden>
+    </span>
+    <button type="button" id="export-btn" title="Download this user's courses + charts">Export</button>
+    <button type="button" id="logout-btn">Log out</button>
+  </div>
+</header>
+
+<main class="app-main">
+  <section class="removed-panel is-empty" id="removed-panel" aria-label="Removed students">
+    <h3>Removed students <span id="removed-count"></span></h3>
+    <div class="removed-list" id="removed-list"></div>
+  </section>
+
+  <section class="chart-area" id="chart-area">
+    <div class="setup-card" id="setup-card">
+      <h2>Set up your chart</h2>
+      <p class="lede">Pick the chart's gender, then how many rows and how many students per row. The chart prefills automatically.</p>
+      <form class="setup-form" id="setup-form" novalidate>
+        <div class="field roster-field">
+          <label id="roster-label" for="roster-select">Course roster</label>
+          <div class="roster-row">
+            <select id="roster-select" aria-describedby="roster-status"></select>
+            <button type="button" id="upload-btn" title="Upload a Registration Desk Report PDF">Upload course PDF…</button>
+            <button type="button" class="ghost is-hidden" id="roster-remove-btn">Remove</button>
+            <input type="file" id="upload-input" accept=".pdf,application/pdf" hidden>
+          </div>
+          <div class="hint" id="roster-status"></div>
+          <div id="upload-status" aria-live="polite"></div>
+        </div>
+        <div class="field">
+          <label id="gender-label">Gender</label>
+          <div class="segmented" role="group" aria-labelledby="gender-label" id="gender-toggle">
+            <button type="button" data-gender="F" aria-pressed="true">Female</button>
+            <button type="button" data-gender="M" aria-pressed="false">Male</button>
+          </div>
+        </div>
+        <div class="number-row">
+          <div class="field">
+            <label for="rows-input">Rows (A, B, C…)</label>
+            <input id="rows-input" name="rows" type="number" min="1" max="26" step="1" value="4" inputmode="numeric" required aria-describedby="rows-hint rows-error">
+            <div class="hint" id="rows-hint">1–26 rows</div>
+            <div class="error" id="rows-error" aria-live="polite"></div>
+          </div>
+          <div class="field">
+            <label for="cols-input">Students per row</label>
+            <input id="cols-input" name="cols" type="number" min="1" max="20" step="1" value="8" inputmode="numeric" required aria-describedby="cols-hint cols-error">
+            <div class="hint" id="cols-hint">1–20 students per row</div>
+            <div class="error" id="cols-error" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="preview" id="setup-preview" aria-live="polite">
+          <!-- Live capacity vs roster preview -->
+        </div>
+        <div class="submit-row">
+          <button type="button" class="ghost is-hidden" id="setup-cancel">Cancel</button>
+          <button type="button" class="ghost is-hidden" id="setup-open">Open saved</button>
+          <button type="submit" id="setup-submit">Build chart</button>
+        </div>
+      </form>
+    </div>
+    <div id="chart-mount"></div>
+    <p class="chart-hint is-hidden" id="chart-hint">Drag any seat onto another to swap them. Click the pin to lock a seat in place. Hit Flip to mirror the chart.</p>
+  </section>
+
+</main>
+</div><!-- /#app-root -->
+
+<!-- ====== DATA: built-in roster (default / fallback). Shape: { course, students }.
+     Generated by .claude/convert_roster.py; override at runtime via "Load roster file…". ====== -->
+<!-- Per-user auth + data layer: must load before the seating engine. -->
+<script src="src/users.js"></script>
+<script src="src/auth.js"></script>
+
+<script>
+(() => {
+  "use strict";
+
+  // Roster comes from the logged-in user's library (window.__ROSTER, set by auth.js),
+  // not from a baked-in registry — so data is per-user and never in the repo.
+  const R = window.__ROSTER || { rosters: [], activeKey: null, storagePrefix: "cs:guest" };
+  const STORE_PREFIX = R.storagePrefix;
+  const ACTIVE_KEY = STORE_PREFIX + ":active";
+
+  let ROSTERS = Array.isArray(R.rosters) ? R.rosters.slice() : [];
+  if (!ROSTERS.length) ROSTERS = [{ course: null, students: [] }];
+
+  // Stable key per roster (course label, else position).
+  const rosterKey = (r, i) => (r.course && r.course.label) ? r.course.label : `roster-${i}`;
+
+  let activeKey = R.activeKey;
+  let activeIdx = ROSTERS.findIndex((r, i) => rosterKey(r, i) === activeKey);
+  if (activeIdx < 0) activeIdx = 0;   // unknown/stale selection → first roster
+
+  const activeRoster = ROSTERS[activeIdx];
+  let STUDENTS = (activeRoster.students || []).filter(
+    (s) => s.section !== "Male Servers" && s.section !== "Female Servers",
+  );
+  const ROSTER_COURSE = activeRoster.course || null;
+
+  // Freeze so accidental console mutation can't corrupt the source roster.
+  STUDENTS.forEach(Object.freeze);
+  Object.freeze(STUDENTS);
+
+  // Namespaced debug hook (avoids polluting `window` with a generic name).
+  window.__CalmSeating = Object.freeze({
+    students: STUDENTS,
+    course: ROSTER_COURSE,
+    activeKey: rosterKey(activeRoster, activeIdx),
+    // Only real courses (with a parsed course block) are listed; the empty
+    // placeholder used to keep the engine happy is not surfaced.
+    rosters: ROSTERS.filter((r) => r.course).map((r, i) => ({
+      key: rosterKey(r, i),
+      label: r.course.label || `Course ${i + 1}`,
+      seatable: (r.students || []).filter(
+        (s) => s.section !== "Male Servers" && s.section !== "Female Servers").length,
+    })),
+  });
+
+  // --- Participant counts (used by setup preview) ---
+  const counts = STUDENTS.reduce((acc, s) => {
+    acc[s.participant] = (acc[s.participant] || 0) + 1;
+    return acc;
+  }, {});
+  const OF_COUNT = counts.OF || 0;
+  const NF_COUNT = counts.NF || 0;
+  const OM_COUNT = counts.OM || 0;
+  const NM_COUNT = counts.NM || 0;
+
+
+  // --- App state (single source of truth) ---
+  const state = {
+    gender: "F",      // "F" | "M"
+    rows: 4,
+    cols: 8,
+    flipped: false,
+    seats: null,      // null ⇒ setup screen; 2D array ⇒ chart rendered
+    removed: [],      // array of studentId strings, shown in the "Removed students" strip
+  };
+
+  // --- Persistence (localStorage) ---
+  // v4: per-gender charts saved independently so switching gender doesn't
+  // overwrite the other one. Older schemas are ignored.
+  const STORAGE_KEY = STORE_PREFIX + ":arr";   // per-user, per-active-course arrangement
+  const charts = { F: null, M: null };    // populated from storage on boot
+
+  function chartSnapshot() {
+    return {
+      rows: state.rows,
+      cols: state.cols,
+      flipped: state.flipped,
+      seats: state.seats,
+      removed: state.removed,
+    };
+  }
+
+  function persistState() {
+    try {
+      // Save the current chart under its gender (only if a chart is open).
+      if (state.gender && state.seats) charts[state.gender] = chartSnapshot();
+      const blob = { charts, lastGender: state.gender };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(blob));
+    } catch {
+      // localStorage may be disabled (private mode, quota, …); silently degrade.
+    }
+  }
+
+  function clearPersistedState() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
+  }
+
+  function isValidChartBlob(c, rows, cols) {
+    if (!c || typeof c !== "object") return false;
+    if (!Number.isInteger(c.rows) || c.rows < 1 || c.rows > 26) return false;
+    if (!Number.isInteger(c.cols) || c.cols < 1 || c.cols > 20) return false;
+    if (typeof c.flipped !== "boolean") return false;
+    if (!Array.isArray(c.removed) || !c.removed.every(id => typeof id === "string")) return false;
+    if (!Array.isArray(c.seats) || c.seats.length !== c.rows) return false;
+    for (const row of c.seats) {
+      if (!Array.isArray(row) || row.length !== c.cols + 1) return false;
+      for (const cell of row) {
+        if (cell == null) continue;
+        if (typeof cell !== "object") return false;
+        if (typeof cell.studentId === "string") {
+          if (typeof cell.pinned !== "boolean") return false;
+        } else if (cell.empty === true) {
+          if (typeof cell.name !== "string") return false;
+          if (typeof cell.note !== "string") return false;
+          if (typeof cell.isExtra !== "boolean") return false;
+        } else {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function loadPersistedState() {
+    let raw;
+    try { raw = localStorage.getItem(STORAGE_KEY); } catch { return null; }
+    if (!raw) return null;
+    let blob;
+    try { blob = JSON.parse(raw); } catch { return null; }
+    if (!blob || typeof blob !== "object" || !blob.charts) return null;
+    const out = { charts: { F: null, M: null }, lastGender: null };
+    for (const g of ["F", "M"]) {
+      const c = blob.charts[g];
+      if (c && isValidChartBlob(c)) out.charts[g] = c;
+    }
+    out.lastGender = (blob.lastGender === "F" || blob.lastGender === "M") ? blob.lastGender : null;
+    return out;
+  }
+
+  // --- Setup form ---
+  const ROWS_MIN = 1, ROWS_MAX = 26;
+  const COLS_MIN = 1, COLS_MAX = 20;
+
+  const els = {
+    form: document.getElementById("setup-form"),
+    rows: document.getElementById("rows-input"),
+    cols: document.getElementById("cols-input"),
+    rowsErr: document.getElementById("rows-error"),
+    colsErr: document.getElementById("cols-error"),
+    preview: document.getElementById("setup-preview"),
+    submit: document.getElementById("setup-submit"),
+    genderToggle: document.getElementById("gender-toggle"),
+    setupCard: document.getElementById("setup-card"),
+    chartMount: document.getElementById("chart-mount"),
+    editSetupBtn: document.getElementById("edit-setup-btn"),
+    flipBtn: document.getElementById("flip-btn"),
+    cancelBtn: document.getElementById("setup-cancel"),
+    chartHint: document.getElementById("chart-hint"),
+    pinAllBtn: document.getElementById("pin-all-btn"),
+    printBtn: document.getElementById("print-btn"),
+    resetBtn: document.getElementById("reset-btn"),
+    openBtn: document.getElementById("setup-open"),
+    removedPanel: document.getElementById("removed-panel"),
+    removedList: document.getElementById("removed-list"),
+    removedCount: document.getElementById("removed-count"),
+  };
+
+  function readIntInput(inputEl, min, max) {
+    // Trim trailing whitespace; reject empty, non-finite, non-integer, out-of-range.
+    const raw = (inputEl.value ?? "").trim();
+    if (raw === "") return { ok: false, reason: "Required." };
+    if (!/^-?\d+$/.test(raw)) return { ok: false, reason: "Whole number only." };
+    const n = Number(raw);
+    if (!Number.isFinite(n) || !Number.isInteger(n)) return { ok: false, reason: "Whole number only." };
+    if (n < min) return { ok: false, reason: `Must be at least ${min}.` };
+    if (n > max) return { ok: false, reason: `Must be at most ${max}.` };
+    return { ok: true, value: n };
+  }
+
+  function validate() {
+    const rowsRes = readIntInput(els.rows, ROWS_MIN, ROWS_MAX);
+    const colsRes = readIntInput(els.cols, COLS_MIN, COLS_MAX);
+
+    els.rowsErr.textContent = rowsRes.ok ? "" : rowsRes.reason;
+    els.colsErr.textContent = colsRes.ok ? "" : colsRes.reason;
+    els.rows.setAttribute("aria-invalid", rowsRes.ok ? "false" : "true");
+    els.cols.setAttribute("aria-invalid", colsRes.ok ? "false" : "true");
+
+    const ok = rowsRes.ok && colsRes.ok;
+    els.submit.disabled = !ok;
+    return { ok, rows: rowsRes.value, cols: colsRes.value };
+  }
+
+  function renderPreview() {
+    const v = validate();
+    const preview = els.preview;
+    preview.replaceChildren();
+    if (!v.ok) {
+      const p = document.createElement("div");
+      p.className = "row";
+      p.textContent = "Enter valid rows and students per row to see capacity.";
+      preview.appendChild(p);
+      return;
+    }
+    const capacity = v.rows * v.cols;
+    const isF = state.gender === "F";
+    const oldCount = isF ? OF_COUNT : OM_COUNT;
+    const newCount = isF ? NF_COUNT : NM_COUNT;
+    const totalCount = oldCount + newCount;
+    const oldLabel = isF ? "OF" : "OM";
+    const newLabel = isF ? "NF" : "NM";
+
+    // Fill order: old first, then new.
+    const oldSeated = Math.min(oldCount, capacity);
+    const newSeated = Math.min(newCount, Math.max(0, capacity - oldSeated));
+    const seated = oldSeated + newSeated;
+    const emptySeats = Math.max(0, capacity - totalCount);
+    const overflow = Math.max(0, totalCount - capacity);
+
+    const rows = [
+      ["Capacity", `${v.rows} × ${v.cols} = ${capacity} seats`],
+      [`${oldLabel} seated`, `${oldSeated} / ${oldCount}`],
+      [`${newLabel} seated`, `${newSeated} / ${newCount}`],
+    ];
+    for (const [k, val] of rows) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const ks = document.createElement("span"); ks.className = "k"; ks.textContent = k;
+      const vs = document.createElement("span"); vs.textContent = val;
+      row.append(ks, vs);
+      preview.appendChild(row);
+    }
+    if (emptySeats > 0) {
+      const row = document.createElement("div");
+      row.className = "row";
+      const ks = document.createElement("span"); ks.className = "k"; ks.textContent = "Empty seats";
+      const vs = document.createElement("span"); vs.textContent = String(emptySeats);
+      row.append(ks, vs);
+      preview.appendChild(row);
+    }
+    if (overflow > 0) {
+      const row = document.createElement("div");
+      row.className = "row warn";
+      const ks = document.createElement("span"); ks.textContent = "Overflow (no seat)";
+      const vs = document.createElement("span"); vs.textContent = String(overflow);
+      row.append(ks, vs);
+      preview.appendChild(row);
+    }
+  }
+
+  function selectGender(g) {
+    state.gender = g;
+    for (const btn of els.genderToggle.querySelectorAll("button")) {
+      btn.setAttribute("aria-pressed", btn.dataset.gender === g ? "true" : "false");
+    }
+    renderPreview();
+    updateSetupAvailability();
+  }
+
+  // Show / hide the "Open saved" button based on whether a saved chart exists
+  // for the currently-selected gender.
+  function updateSetupAvailability() {
+    const saved = charts[state.gender];
+    els.openBtn.classList.toggle("is-hidden", !saved);
+    if (saved) {
+      els.openBtn.textContent = `Open saved ${state.gender === "F" ? "Female" : "Male"} chart`;
+    }
+  }
+
+  function loadChartIntoState(gender) {
+    const c = charts[gender];
+    if (!c) return false;
+    state.gender = gender;
+    state.rows = c.rows;
+    state.cols = c.cols;
+    state.flipped = c.flipped;
+    state.seats = c.seats;
+    state.removed = c.removed || [];
+    return true;
+  }
+
+  function onOpenSaved() {
+    if (!loadChartIntoState(state.gender)) return;
+    hideSetup();
+    applyState();
+  }
+
+  // Push state values back into the form inputs. Use before re-showing the
+  // setup card so preview/validation read from committed state, not stale input.
+  function syncFormFromState() {
+    els.rows.value = String(state.rows);
+    els.cols.value = String(state.cols);
+    selectGender(state.gender); // also repaints preview
+  }
+
+  function showSetup({ keepSeats = false } = {}) {
+    // Move focus to a stable anchor before we hide header buttons; otherwise
+    // a focused button getting `display:none` drops focus to <body>.
+    document.querySelector("header.app-header h1")?.focus?.();
+    if (!keepSeats) {
+      state.seats = null;               // setup screen ⇒ no committed seating
+      persistState();
+    }
+    syncFormFromState();
+    els.setupCard.classList.remove("is-hidden");
+    if (!keepSeats) {
+      els.chartMount.replaceChildren();
+    } else {
+      els.chartMount.classList.add("is-hidden");
+    }
+    els.editSetupBtn.classList.add("is-hidden");
+    els.flipBtn.classList.add("is-hidden");
+    els.pinAllBtn.classList.add("is-hidden");
+    els.printBtn.classList.add("is-hidden");
+    els.resetBtn.classList.add("is-hidden");
+    els.chartHint.classList.add("is-hidden");
+    els.cancelBtn.classList.toggle("is-hidden", !keepSeats);
+  }
+
+  function hideSetup() {
+    els.setupCard.classList.add("is-hidden");
+    els.chartMount.classList.remove("is-hidden");
+    els.editSetupBtn.classList.remove("is-hidden");
+    els.flipBtn.classList.remove("is-hidden");
+    els.pinAllBtn.classList.remove("is-hidden");
+    els.printBtn.classList.remove("is-hidden");
+    els.resetBtn.classList.remove("is-hidden");
+    els.cancelBtn.classList.add("is-hidden");
+    els.chartHint.classList.remove("is-hidden");
+    els.flipBtn.setAttribute("aria-pressed", state.flipped ? "true" : "false");
+  }
+
+  function onEditSetup() {
+    // Keep state.seats live so a Cancel returns to the existing chart.
+    showSetup({ keepSeats: true });
+  }
+
+  function onCancelSetup() {
+    if (!state.seats) return;            // nothing to cancel back to
+    hideSetup();
+    applyState();                         // re-renders chart from preserved state
+  }
+
+  function onFlip() {
+    state.flipped = !state.flipped;
+    els.flipBtn.setAttribute("aria-pressed", state.flipped ? "true" : "false");
+    if (state.seats) renderGrid();
+    persistState();
+  }
+
+  // --- Pin all / unpin all ---
+  // Only student-occupied seats are pinnable (empties/extras have no student).
+  function listPinnableCells() {
+    const out = [];
+    if (!state.seats) return out;
+    for (const row of state.seats) for (const cell of row) {
+      if (cell && cell.studentId) out.push(cell);
+    }
+    return out;
+  }
+
+  function updatePinAllLabel() {
+    const pinnable = listPinnableCells();
+    const anyPinnable = pinnable.length > 0;
+    const allPinned = anyPinnable && pinnable.every(c => c.pinned);
+    els.pinAllBtn.disabled = !anyPinnable;
+    els.pinAllBtn.textContent = allPinned ? "Unpin all" : "Pin all";
+  }
+
+  function onPinAll() {
+    const pinnable = listPinnableCells();
+    if (pinnable.length === 0) return;
+    const allPinned = pinnable.every(c => c.pinned);
+    const target = !allPinned;
+    for (const cell of pinnable) cell.pinned = target;
+    renderGrid();
+    updatePinAllLabel();
+    persistState();
+  }
+
+  function onSubmit(e) {
+    e.preventDefault();
+    const v = validate();
+    if (!v.ok) return;
+    state.rows = v.rows;
+    state.cols = v.cols;
+    buildAndRender();
+  }
+
+  // --- Sorting & fill ---
+  function satCount(student) {
+    const total = (student.total || "").trim();
+    if (!total) return 0;
+    const slash = total.indexOf("/");
+    if (slash < 0) {
+      console.warn("malformed total (no slash):", student.id, total);
+      return 0;
+    }
+    const head = total.slice(0, slash).trim();
+    if (!/^\d+$/.test(head)) {
+      console.warn("malformed total (non-numeric sat):", student.id, total);
+      return 0;
+    }
+    return parseInt(head, 10);
+  }
+
+  // Pin the locale so sort is byte-identical across machines/browsers; chain
+  // tiebreakers all the way down to id so the result is a total order.
+  const COLLATOR = new Intl.Collator("en", { sensitivity: "base", usage: "sort" });
+
+  function buildFillOrder(gender) {
+    const isF = gender === "F";
+    const oldCode = isF ? "OF" : "OM";
+    const newCode = isF ? "NF" : "NM";
+    // Filter returns a fresh array — STUDENTS itself is frozen, but the filter result is mutable.
+    const oldGroup = STUDENTS.filter(s => s.participant === oldCode);
+    const newGroup = STUDENTS.filter(s => s.participant === newCode);
+    const byName = (a, b) =>
+      COLLATOR.compare(a.lastName, b.lastName) ||
+      COLLATOR.compare(a.firstName, b.firstName) ||
+      (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+    oldGroup.sort((a, b) => (satCount(b) - satCount(a)) || byName(a, b));
+    newGroup.sort(byName);
+    return oldGroup.concat(newGroup);
+  }
+
+  function buildSeats(rows, cols, gender) {
+    const fill = buildFillOrder(gender);
+    const seats = [];
+    let i = 0;
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let c = 0; c < cols; c++) {
+        if (i < fill.length) {
+          row.push({ studentId: fill[i].id, pinned: false, note: "" });
+          i++;
+        } else {
+          // Visible empty box (dashed). User can type a name or drop a student onto it.
+          row.push({ empty: true, isExtra: false, name: "", note: "" });
+        }
+      }
+      // Always one extra editable seat at the end of each row (thick top border).
+      row.push({ empty: true, isExtra: true, name: "", note: "" });
+      seats.push(row);
+    }
+    const overflow = fill.slice(i);
+    return { seats, overflow };
+  }
+
+  function rowLetter(idx) {
+    // idx is 0-based; A is row 0 (bottom). 26 is enforced by validation.
+    return String.fromCharCode(65 + idx);
+  }
+  function seatLabel(r, c) { return rowLetter(r) + (c + 1); }
+
+  // --- Icons (inline SVG so they render identically across OS/browser) ---
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  function svgIcon(paths, { size = 16, stroke = 1.8 } = {}) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", String(size));
+    svg.setAttribute("height", String(size));
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", String(stroke));
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+    for (const d of paths) {
+      const p = document.createElementNS(SVG_NS, "path");
+      p.setAttribute("d", d);
+      svg.appendChild(p);
+    }
+    return svg;
+  }
+  function dragHandleIcon() {
+    return svgIcon(["M4 7h16", "M4 12h16", "M4 17h16"]);
+  }
+  function pinIcon(filled) {
+    // Simple thumbtack
+    const paths = ["M12 17v5", "M8 3h8l-1 4 3 5H6l3-5-1-4z"];
+    const svg = svgIcon(paths);
+    if (filled) {
+      const polygon = svg.querySelector("path:last-child");
+      if (polygon) polygon.setAttribute("fill", "currentColor");
+    }
+    return svg;
+  }
+  function editIcon() {
+    // Pencil
+    return svgIcon([
+      "M12 20h9",
+      "M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z",
+    ]);
+  }
+  function closeIcon() {
+    return svgIcon(["M6 6l12 12", "M6 18L18 6"]);
+  }
+
+
+  // --- Seat rendering ---
+  // Indexed lookup; Step 4 drag-to-swap re-renders on every drop.
+  const STUDENTS_BY_ID = new Map(STUDENTS.map(s => [s.id, s]));
+  function studentById(id) { return STUDENTS_BY_ID.get(id) || null; }
+
+  // The grid has cols+1 visual columns. c in [0..cols-1] are the seat columns,
+  // c == cols is the "extra" slot. The extra sits at the *end* of the row:
+  // outside A_cols for the current gender / flip.
+  function extrasOnRight(gender, flipped) {
+    return (gender === "F") !== flipped;
+  }
+  function visualGridPos(r, c, rows, cols, gender, flipped) {
+    const gridRow = rows - r;
+    const totalCols = cols + 1;
+    let gridCol;
+    if (c === cols) {
+      // Extra column: leftmost or rightmost depending on orientation.
+      gridCol = extrasOnRight(gender, flipped) ? totalCols : 1;
+    } else {
+      // Regular seat column [0..cols-1]
+      if (gender === "F") gridCol = c + 1;
+      else gridCol = cols - c;
+      if (flipped) gridCol = cols + 1 - gridCol;
+      // Shift seats over by 1 if extras column is on the left.
+      if (!extrasOnRight(gender, flipped)) gridCol += 1;
+    }
+    return { gridRow, gridCol };
+  }
+
+  function renderSeat(r, c) {
+    const seatState = state.seats[r][c];
+    // null cell ⇒ no box rendered (X-deleted hole).
+    if (seatState === null) return null;
+
+    const isExtra  = !!(seatState && seatState.empty && seatState.isExtra);
+    const isEmpty  = !!(seatState && seatState.empty);
+    const isFilled = !isEmpty;
+
+    const el = document.createElement("div");
+    el.className = "seat";
+    el.dataset.row = String(r);
+    el.dataset.col = String(c);
+    el.dataset.seatLabel = seatLabel(r, c);
+
+    // ---- Header: label (left) | pin | delete (right) ----
+    const head = document.createElement("div");
+    head.className = "seat-head";
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "label";
+    labelEl.textContent = seatLabel(r, c);
+
+    const headRight = document.createElement("span");
+    headRight.className = "head-right";
+
+    // Pin
+    const pinBtn = document.createElement("button");
+    pinBtn.type = "button";
+    pinBtn.className = "icon-btn pin-btn";
+    pinBtn.draggable = false;
+    const isPinned = !!(seatState && seatState.pinned);
+    if (isEmpty) {
+      pinBtn.disabled = true;
+      pinBtn.setAttribute("aria-label", "Cannot pin empty seat");
+      pinBtn.setAttribute("aria-pressed", "false");
+    } else {
+      pinBtn.setAttribute("aria-label", isPinned ? "Unpin seat" : "Pin seat");
+      pinBtn.setAttribute("aria-pressed", isPinned ? "true" : "false");
+      pinBtn.addEventListener("click", onPinClick);
+    }
+    pinBtn.appendChild(pinIcon(isPinned));
+
+    // Delete (×) — removes the whole seat (sets cell to null/hole).
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "icon-btn delete-btn";
+    delBtn.draggable = false;
+    delBtn.setAttribute("aria-label", "Delete this seat");
+    delBtn.appendChild(closeIcon());
+    delBtn.addEventListener("click", onDeleteClick);
+
+    headRight.append(pinBtn, delBtn);
+    head.append(labelEl, headRight);
+
+    // ---- Body + stats ----
+    const body  = document.createElement("div"); body.className  = "seat-body";
+    const stats = document.createElement("div"); stats.className = "seat-stats";
+    const noteEl = document.createElement("div"); noteEl.className = "seat-note";
+
+    const s = seatState && seatState.studentId ? studentById(seatState.studentId) : null;
+    if (s) {
+      el.classList.add(s.participant === "OF" || s.participant === "OM" ? "seat--old" : "seat--new");
+      if (seatState.pinned) el.classList.add("seat--pinned");
+      if (DUPLICATE_IDS.has(s.id)) el.classList.add("seat--duplicate");
+      el.dataset.studentId = s.id;
+
+      const first = document.createElement("div");
+      first.className = "first";
+      first.textContent = s.firstName || "";
+      const last = document.createElement("div");
+      last.className = "last";
+      last.textContent = s.lastName || "";
+      body.append(first, last);
+
+      if (s.total) { const x = document.createElement("span"); x.textContent = s.total;          stats.appendChild(x); }
+      if (s.stp)   { const x = document.createElement("span"); x.textContent = `STP ${s.stp}`;   stats.appendChild(x); }
+      if (s.lc)    { const x = document.createElement("span"); x.textContent = `LC ${s.lc}`;     stats.appendChild(x); }
+
+      if (s.age) {
+        const ageEl = document.createElement("div");
+        ageEl.className = "seat-age";
+        ageEl.textContent = s.age;
+        ageEl.setAttribute("aria-label", `Age ${s.age}`);
+        el.appendChild(ageEl);
+      }
+
+      if (seatState.note) noteEl.textContent = seatState.note;
+    } else if (isEmpty) {
+      el.classList.add("seat--empty");
+      if (isExtra) el.classList.add("seat--extra");
+
+      // Editable name input — types directly into the empty box.
+      const input = document.createElement("input");
+      input.type = "text";
+      input.className = "seat-name-input";
+      input.placeholder = "Name";
+      input.value = seatState.name || "";
+      input.setAttribute("aria-label", `Name for seat ${seatLabel(r, c)}`);
+      input.draggable = false;
+      input.addEventListener("input", (e) => onEmptyNameInput(e, r, c));
+      body.append(input);
+
+      if (seatState.note) noteEl.textContent = seatState.note;
+    } else {
+      // Student-referencing cell whose roster entry vanished (e.g. CSV updated
+      // after a localStorage save). Fall back to empty styling, log once.
+      el.classList.add("seat--empty");
+      console.warn("seat references unknown student:", seatState && seatState.studentId);
+      const empty = document.createElement("div");
+      empty.className = "first"; empty.textContent = "—";
+      body.append(empty);
+    }
+
+    el.append(head, body, stats);
+    if (noteEl.textContent) el.appendChild(noteEl);
+
+    // Side plus buttons (visible on hover): top / right / bottom / left.
+    for (const side of ["t", "r", "b", "l"]) {
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = `seat-plus seat-plus--${side}`;
+      plus.draggable = false;
+      plus.setAttribute("aria-label", `Add empty seat (${side.toUpperCase()})`);
+      plus.textContent = "+";
+      plus.dataset.side = side;
+      plus.addEventListener("click", onPlusClick);
+      el.appendChild(plus);
+    }
+
+    const { gridRow, gridCol } = visualGridPos(r, c, state.rows, state.cols, state.gender, state.flipped);
+    el.style.gridRow = String(gridRow);
+    el.style.gridColumn = String(gridCol);
+
+    attachDragHandlers(el, { pinned: !!(seatState && seatState.pinned) });
+    return el;
+  }
+
+  // --- Edit note / delete seat / type empty name ---
+  function coordsFromEvent(e) {
+    const seatEl = e.currentTarget.closest(".seat");
+    if (!seatEl) return null;
+    const r = Number(seatEl.dataset.row);
+    const c = Number(seatEl.dataset.col);
+    if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
+    return { r, c };
+  }
+
+  function onEditClick(e) {
+    e.stopPropagation();
+    const xy = coordsFromEvent(e);
+    if (!xy) return;
+    const cell = state.seats?.[xy.r]?.[xy.c];
+    if (!cell) return;
+    const current = cell.note || "";
+    const next = window.prompt("Note for this seat (e.g. Chair, Floor)", current);
+    if (next === null) return;             // user pressed Cancel
+    cell.note = next.trim();
+    renderGrid();
+    persistState();
+  }
+
+  function onDeleteClick(e) {
+    e.stopPropagation();
+    const xy = coordsFromEvent(e);
+    if (!xy || !state.seats) return;
+    const cell = state.seats[xy.r][xy.c];
+    if (cell && cell.studentId) {
+      // Student seat: move them to the Removed panel; leave an empty box behind
+      // so the slot stays usable for drag/edit.
+      if (!state.removed.includes(cell.studentId)) state.removed.push(cell.studentId);
+      state.seats[xy.r][xy.c] = { empty: true, isExtra: false, name: "", note: "" };
+    } else {
+      // Empty or extra seat: delete the box entirely (hole).
+      state.seats[xy.r][xy.c] = null;
+    }
+    renderGrid();
+    renderRemovedPanel();
+    updatePinAllLabel();
+    persistState();
+  }
+
+  // Plus button: insert an empty seat on the side (t/r/b/l) of this seat.
+  function onPlusClick(e) {
+    e.stopPropagation();
+    const seatEl = e.currentTarget.closest(".seat");
+    const side = e.currentTarget.dataset.side;
+    if (!seatEl || !state.seats || !side) return;
+    const r = Number(seatEl.dataset.row);
+    const c = Number(seatEl.dataset.col);
+    const from = visualGridPos(r, c, state.rows, state.cols, state.gender, state.flipped);
+    let toRow = from.gridRow + (side === "t" ? -1 : side === "b" ? 1 : 0);
+    let toCol = from.gridCol + (side === "l" ? -1 : side === "r" ? 1 : 0);
+
+    const totalCols = state.cols + 1;
+
+    // Out of bounds → extend the grid in that direction.
+    if (toRow < 1) {
+      // New row above (visually higher letter → higher array index).
+      const newRow = new Array(totalCols).fill(null).map(() => ({ empty: true, isExtra: false, name: "", note: "" }));
+      state.seats.push(newRow);
+      state.rows += 1;
+      // The new top row in array terms is state.rows-1; visual gridRow = 1.
+      toRow = 1;
+    }
+    if (toRow > state.rows) {
+      // New row below (lower letter would be needed). Adding "below A" doesn't
+      // make sense in our labelling scheme, so we no-op here.
+      return;
+    }
+    if (toCol < 1 || toCol > totalCols) {
+      // Extend the grid by inserting a column on the appropriate side. We grow
+      // state.cols by 1 and splice a new empty slot into every row, keeping the
+      // extras column on the same physical side.
+      const onLeft = toCol < 1;            // new column goes on the visual-left
+      // Choose array index to splice at, depending on extras placement.
+      const extrasRight = extrasOnRight(state.gender, state.flipped);
+      for (const row of state.seats) {
+        // We're inserting a regular empty cell. Position in the array:
+        //   F unflipped & extrasRight: array left = c=0; new cell at c=0
+        //   F flipped & extrasLeft : array left = c=cols (extras); new cell at c=cols-1 (right side visually)
+        // It's simpler to just push to one end based on whether onLeft matches
+        // the array's left side for this orientation.
+        const insertAtArrayStart = (state.gender === "F") ? onLeft : !onLeft;
+        const newCell = { empty: true, isExtra: false, name: "", note: "" };
+        if (extrasRight) {
+          // extras are at index cols (array end). Insert before them on the
+          // proper side: array start for one side, array index cols for other.
+          if (insertAtArrayStart) row.unshift(newCell);
+          else row.splice(row.length - 1, 0, newCell);
+        } else {
+          // extras are at index 0 (array start). Mirror logic.
+          if (insertAtArrayStart) row.splice(1, 0, newCell);
+          else row.push(newCell);
+        }
+      }
+      state.cols += 1;
+      // After this, just re-render — caller may have been targeting a specific
+      // empty cell, but extending the grid is the user-visible action here.
+      renderGrid();
+      persistState();
+      return;
+    }
+
+    // In-bounds: find the array cell at visual (toRow, toCol). If null, fill;
+    // if already a box, no-op (plus shouldn't replace an existing seat).
+    for (let rr = 0; rr < state.rows; rr++) {
+      for (let cc = 0; cc <= state.cols; cc++) {
+        const p = visualGridPos(rr, cc, state.rows, state.cols, state.gender, state.flipped);
+        if (p.gridRow === toRow && p.gridCol === toCol) {
+          if (state.seats[rr][cc] == null) {
+            state.seats[rr][cc] = { empty: true, isExtra: false, name: "", note: "" };
+            renderGrid();
+            persistState();
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  function onEmptyNameInput(e, r, c) {
+    // Live update; don't re-render (would lose caret position). Persist on blur
+    // / change is handled by `change` event below.
+    const cell = state.seats?.[r]?.[c];
+    if (!cell || !cell.empty) return;
+    cell.name = e.target.value;
+    persistState();
+  }
+
+  // --- Pin / lock ---
+  function onPinClick(e) {
+    // Defense in depth against drag interference (the pin is non-draggable AND
+    // onDragStart guards against pin-as-source, but stop here too in case a
+    // future change reorders those).
+    e.stopPropagation();
+    const seatEl = e.currentTarget.closest(".seat");
+    if (!seatEl) return;
+    const r = Number(seatEl.dataset.row);
+    const c = Number(seatEl.dataset.col);
+    const seat = state.seats?.[r]?.[c];
+    if (!seat) return;                     // empty seats can't be pinned
+    seat.pinned = !seat.pinned;
+    renderGrid();
+    updatePinAllLabel();
+    persistState();
+  }
+
+  // --- Drag-and-drop swap (pointer-events based) ---
+  // We use pointer events instead of HTML5 drag-and-drop. HTML5 drag is
+  // unreliable across browsers/automation/touch; pointer events give us
+  // a single code path that just works.
+  //
+  // dragSrc shape:
+  //   { kind: "seat", r, c, shift }         — drag started on a seat
+  //   { kind: "removed", studentId, shift } — drag started on a Removed-panel chip
+  // `shift` is captured at pointerdown so the modifier state is stable even
+  // if the user lets shift go partway through the drag.
+  let dragSrc = null;
+  let dragMoved = false;            // true once movement crosses the threshold
+  let dragStartX = 0, dragStartY = 0;
+  let dragPointerId = null;
+  let dragGhost = null;             // clone of the source that follows the cursor
+  let dragGhostOffsetX = 0;
+  let dragGhostOffsetY = 0;
+  const DRAG_THRESHOLD_PX = 4;
+
+  function attachDragHandlers(el, opts = {}) {
+    el.dataset.pinned = opts.pinned ? "1" : "";
+    el.addEventListener("pointerdown", onSeatPointerDown);
+    // For mobile/touch — prevent native scroll/zoom from hijacking the drag.
+    el.style.touchAction = "none";
+  }
+
+  // Outcome semantics:
+  //   "self"      — same source/target, no indicator
+  //   "block"     — drop is allowed but rejected (red outline + shake)
+  //   "allow"     — normal swap of cell contents
+  //   "duplicate" — shift held, copy source's student into an empty target
+  //   "restore"   — source is a Removed chip, target is an empty seat
+  // Pin policy: "do not touch" — either endpoint being pinned blocks the swap.
+  function dropOutcome(src, tgtR, tgtC, shiftKey) {
+    const tgt = state.seats?.[tgtR]?.[tgtC];
+    if (src.kind === "removed") {
+      // Removed chip can land on any empty seat (not a hole, not a student).
+      if (tgt && tgt.empty) return "restore";
+      return "block";
+    }
+    // Source is a seat
+    if (src.r === tgtR && src.c === tgtC) return "self";
+    const srcCell = state.seats?.[src.r]?.[src.c];
+    if ((srcCell && srcCell.pinned) || (tgt && tgt.pinned)) return "block";
+    if (shiftKey) {
+      const srcIsStudent = !!(srcCell && srcCell.studentId);
+      const tgtIsEmpty   = !!(tgt && tgt.empty);
+      return (srcIsStudent && tgtIsEmpty) ? "duplicate" : "block";
+    }
+    return "allow";
+  }
+
+  function clearDragVisuals() {
+    if (dragGhost) {
+      dragGhost.remove();
+      dragGhost = null;
+    }
+    for (const el of document.querySelectorAll(".seat--dragging, .seat--dragover, .seat--blocked, .removed-chip.is-dragging")) {
+      el.classList.remove("seat--dragging", "seat--dragover", "seat--blocked", "is-dragging");
+    }
+  }
+
+  function findSeatUnderPoint(x, y) {
+    const el = document.elementFromPoint(x, y);
+    return el ? el.closest(".seat") : null;
+  }
+
+  function paintHover(targetSeatEl) {
+    // Clear previous highlights then paint the current one based on outcome.
+    document.querySelectorAll(".seat--dragover, .seat--blocked").forEach(
+      (el) => el.classList.remove("seat--dragover", "seat--blocked"),
+    );
+    if (!targetSeatEl || !dragSrc) return;
+    const tr = Number(targetSeatEl.dataset.row);
+    const tc = Number(targetSeatEl.dataset.col);
+    const outcome = dropOutcome(dragSrc, tr, tc, dragSrc.shift);
+    const positive = outcome === "allow" || outcome === "duplicate" || outcome === "restore";
+    if (positive) targetSeatEl.classList.add("seat--dragover");
+    else if (outcome === "block") targetSeatEl.classList.add("seat--blocked");
+  }
+
+  function shakeSrc() {
+    let srcEl = null;
+    if (!dragSrc) return;
+    if (dragSrc.kind === "seat") {
+      srcEl = document.querySelector(`.seat[data-row="${dragSrc.r}"][data-col="${dragSrc.c}"]`);
+    } else {
+      srcEl = document.querySelector(`.removed-chip[data-student-id="${dragSrc.studentId}"]`);
+    }
+    if (!srcEl) return;
+    srcEl.classList.remove("seat--shake");
+    void srcEl.offsetWidth;        // restart animation
+    srcEl.classList.add("seat--shake");
+    srcEl.addEventListener("animationend", () => srcEl.classList.remove("seat--shake"), { once: true });
+  }
+
+  function commitDrop(tr, tc) {
+    const outcome = dropOutcome(dragSrc, tr, tc, dragSrc.shift);
+    if (outcome === "self") return;
+    if (outcome === "block") { shakeSrc(); return; }
+    if (outcome === "restore") {
+      const id = dragSrc.studentId;
+      state.seats[tr][tc] = { studentId: id, pinned: false, note: "" };
+      const idx = state.removed.indexOf(id);
+      if (idx >= 0) state.removed.splice(idx, 1);
+    } else if (outcome === "duplicate") {
+      const src = state.seats[dragSrc.r][dragSrc.c];
+      state.seats[tr][tc] = { studentId: src.studentId, pinned: false, note: "" };
+    } else {
+      // "allow" — swap contents
+      const src = state.seats[dragSrc.r][dragSrc.c];
+      state.seats[dragSrc.r][dragSrc.c] = state.seats[tr][tc];
+      state.seats[tr][tc] = src;
+    }
+    renderGrid();
+    renderRemovedPanel();
+    updatePinAllLabel();
+    persistState();
+  }
+
+  function onSeatPointerDown(e) {
+    if (e.button !== 0) return;                                // primary button only
+    if (e.target.closest(".pin-btn, .delete-btn, .seat-plus, .seat-name-input")) return;
+    const el = e.currentTarget;
+    if (el.dataset.pinned === "1") return;                     // pinned seats can't be picked up
+    const r = Number(el.dataset.row);
+    const c = Number(el.dataset.col);
+    if (!Number.isInteger(r) || !Number.isInteger(c)) return;
+    beginDrag({ kind: "seat", r, c, shift: !!e.shiftKey }, e);
+  }
+
+  function onChipPointerDown(e) {
+    if (e.button !== 0) return;
+    const id = e.currentTarget.dataset.studentId;
+    if (!id) return;
+    beginDrag({ kind: "removed", studentId: id, shift: !!e.shiftKey }, e);
+  }
+
+  function beginDrag(src, e) {
+    dragSrc = src;
+    dragMoved = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragPointerId = e.pointerId;
+    // Resolve the source DOM element so we can fade it and clone it.
+    let srcEl = null;
+    if (src.kind === "seat") {
+      srcEl = document.querySelector(`.seat[data-row="${src.r}"][data-col="${src.c}"]`);
+      srcEl?.classList.add("seat--dragging");
+    } else {
+      srcEl = document.querySelector(`.removed-chip[data-student-id="${src.studentId}"]`);
+      srcEl?.classList.add("is-dragging");
+    }
+    // Build a "ghost" — a clone of the source — that follows the cursor.
+    if (srcEl) {
+      const rect = srcEl.getBoundingClientRect();
+      dragGhostOffsetX = e.clientX - rect.left;
+      dragGhostOffsetY = e.clientY - rect.top;
+      const ghost = srcEl.cloneNode(true);
+      ghost.classList.remove("seat--dragging", "is-dragging");
+      ghost.classList.add("drag-ghost");
+      ghost.style.left   = `${rect.left}px`;
+      ghost.style.top    = `${rect.top}px`;
+      ghost.style.width  = `${rect.width}px`;
+      ghost.style.height = `${rect.height}px`;
+      document.body.appendChild(ghost);
+      dragGhost = ghost;
+    }
+    // Track on document so we don't lose events when the pointer moves outside
+    // the source element (common when dragging onto another seat).
+    document.addEventListener("pointermove", onDocPointerMove);
+    document.addEventListener("pointerup",   onDocPointerUp);
+    document.addEventListener("pointercancel", onDocPointerUp);
+  }
+
+  function onDocPointerMove(e) {
+    if (!dragSrc || e.pointerId !== dragPointerId) return;
+    // Move the ghost to follow the cursor (offset preserved from pickup point).
+    if (dragGhost) {
+      dragGhost.style.left = `${e.clientX - dragGhostOffsetX}px`;
+      dragGhost.style.top  = `${e.clientY - dragGhostOffsetY}px`;
+    }
+    if (!dragMoved) {
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) return;
+      dragMoved = true;
+    }
+    paintHover(findSeatUnderPoint(e.clientX, e.clientY));
+  }
+
+  function onDocPointerUp(e) {
+    if (!dragSrc || e.pointerId !== dragPointerId) return;
+    document.removeEventListener("pointermove", onDocPointerMove);
+    document.removeEventListener("pointerup",   onDocPointerUp);
+    document.removeEventListener("pointercancel", onDocPointerUp);
+
+    const moved = dragMoved;
+    if (moved && state.seats) {
+      const tgt = findSeatUnderPoint(e.clientX, e.clientY);
+      if (tgt) {
+        const tr = Number(tgt.dataset.row);
+        const tc = Number(tgt.dataset.col);
+        if (Number.isInteger(tr) && Number.isInteger(tc)) commitDrop(tr, tc);
+      }
+    }
+    clearDragVisuals();
+    dragSrc = null;
+    dragMoved = false;
+    dragPointerId = null;
+  }
+
+  // Fixed seat dimensions: boxes stay the same size regardless of viewport,
+  // and chart-area's overflow-x: auto handles narrow screens with a scrollbar.
+  const SEAT_W = 150;                   // px
+  const SEAT_H = 118;                   // px
+
+  // Identify any studentId that appears in more than one seat — both copies
+  // are then rendered with dashed borders.
+  function computeDuplicateIds(seats) {
+    const counts = new Map();
+    for (const row of seats) for (const cell of row) {
+      const id = cell && cell.studentId;
+      if (!id) continue;
+      counts.set(id, (counts.get(id) || 0) + 1);
+    }
+    const dups = new Set();
+    for (const [id, n] of counts) if (n > 1) dups.add(id);
+    return dups;
+  }
+  // Made module-scope so renderSeat (called per cell) can read it.
+  let DUPLICATE_IDS = new Set();
+
+  function renderGrid() {
+    DUPLICATE_IDS = computeDuplicateIds(state.seats);
+
+    const wrap = document.createElement("div");
+    wrap.className = "seat-grid-wrap";
+
+    const totalCols = state.cols + 1;        // includes extras column
+    const grid = document.createElement("div");
+    grid.className = "seat-grid";
+    grid.style.gridTemplateColumns = `repeat(${totalCols}, ${SEAT_W}px)`;
+    grid.style.gridTemplateRows = `repeat(${state.rows}, ${SEAT_H}px)`;
+    for (let r = 0; r < state.rows; r++) {
+      for (let c = 0; c <= state.cols; c++) {     // <= cols: includes the extra
+        const node = renderSeat(r, c);
+        if (node) grid.appendChild(node);
+      }
+    }
+
+    // Dhamma Seat label below A1; follows A1 through flips/gender swaps.
+    const dhamma = document.createElement("div");
+    dhamma.className = "dhamma-row";
+    dhamma.style.gridTemplateColumns = `repeat(${totalCols}, ${SEAT_W}px)`;
+    const label = document.createElement("div");
+    label.className = "dhamma-label";
+    label.textContent = "Dhamma Seat";
+    const a1Pos = visualGridPos(0, 0, state.rows, state.cols, state.gender, state.flipped);
+    label.style.gridColumn = String(a1Pos.gridCol);
+    dhamma.appendChild(label);
+
+    wrap.append(grid, dhamma);
+    els.chartMount.replaceChildren(wrap);
+  }
+
+  function applyState() {
+    renderGrid();
+    renderRemovedPanel();
+    updatePinAllLabel();
+    persistState();
+  }
+
+  // --- Removed students panel ---
+  function renderRemovedPanel() {
+    const ids = state.removed || [];
+    els.removedList.replaceChildren();
+    if (ids.length === 0) {
+      els.removedPanel.classList.add("is-empty");
+      els.removedCount.textContent = "";
+      return;
+    }
+    els.removedPanel.classList.remove("is-empty");
+    els.removedCount.textContent = `(${ids.length})`;
+    for (const id of ids) {
+      const s = studentById(id);
+      if (!s) continue;
+      const chip = document.createElement("div");
+      chip.className = "removed-chip";
+      chip.dataset.studentId = id;
+      chip.title = `${s.firstName} ${s.lastName}`.trim();
+      chip.style.touchAction = "none";
+      const f = document.createElement("div"); f.className = "rc-first"; f.textContent = s.firstName || "";
+      const l = document.createElement("div"); l.className = "rc-last";  l.textContent = s.lastName || "";
+      chip.append(f, l);
+      chip.addEventListener("pointerdown", onChipPointerDown);
+      els.removedList.appendChild(chip);
+    }
+  }
+
+  // --- Print ---
+  function onPrint() {
+    if (!state.seats) return;
+    window.print();
+  }
+
+  // --- Reset (refill every seat from the original sort) ---
+  function onReset() {
+    if (!state.seats) return;
+    const ok = window.confirm(
+      "Reset will refill every seat from the original sort order and clear any pins, notes, deletions, or duplicates. Continue?",
+    );
+    if (!ok) return;
+    buildAndRender();           // already resets seats / removed / flipped
+  }
+
+  function buildAndRender() {
+    // Build chart always starts fresh for the chosen gender — discard any prior
+    // removed list and flipped state for this gender so the chart is pristine.
+    const { seats } = buildSeats(state.rows, state.cols, state.gender);
+    state.seats = seats;
+    state.removed = [];
+    state.flipped = false;
+    hideSetup();
+    applyState();
+  }
+
+  els.editSetupBtn.addEventListener("click", onEditSetup);
+  els.cancelBtn.addEventListener("click", onCancelSetup);
+  els.openBtn.addEventListener("click", onOpenSaved);
+  els.flipBtn.addEventListener("click", onFlip);
+  els.pinAllBtn.addEventListener("click", onPinAll);
+  els.printBtn.addEventListener("click", onPrint);
+  els.resetBtn.addEventListener("click", onReset);
+
+  // Arrow-key navigation on the gender segmented toggle.
+  els.genderToggle.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault();
+    const next = state.gender === "F" ? "M" : "F";
+    selectGender(next);
+    els.genderToggle.querySelector(`button[data-gender="${next}"]`)?.focus?.();
+  });
+
+  els.genderToggle.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-gender]");
+    if (!btn) return;
+    selectGender(btn.dataset.gender);
+  });
+  els.rows.addEventListener("input", renderPreview);
+  els.cols.addEventListener("input", renderPreview);
+  els.form.addEventListener("submit", onSubmit);
+
+  // Re-validate on bfcache restore: a back-navigation can repopulate inputs
+  // after the IIFE ran, leaving submit.disabled and the preview stale.
+  window.addEventListener("pageshow", renderPreview);
+
+  // Try to restore prior session.
+  const restored = loadPersistedState();
+  if (restored) {
+    charts.F = restored.charts.F;
+    charts.M = restored.charts.M;
+    const g = restored.lastGender;
+    if (g && charts[g]) {
+      loadChartIntoState(g);
+      hideSetup();
+      renderGrid();
+      renderRemovedPanel();
+      updatePinAllLabel();
+    }
+  }
+  updateSetupAvailability();
+
+  selectGender(state.gender);        // initial paint of preview + pressed state
+})();
+</script>
+
+<!-- ====== Roster picker ======
+  A course dropdown listing the logged-in user's uploaded courses. Picking one
+  switches the active course (via CalmAuth, per-user); "Upload course PDF…" (upload.js)
+  parses a new PDF in the browser and adds it. Switching clears the saved arrangement.
+-->
+<script>
+(() => {
+  "use strict";
+  const selectEl = document.getElementById("roster-select");
+  const statusEl = document.getElementById("roster-status");
+  const courseTag = document.getElementById("course-tag");
+  const removeBtn = document.getElementById("roster-remove-btn");
+  if (!selectEl || !window.__ROSTER) return;
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+    ));
+  }
+
+  const info = window.__CalmSeating || {};
+  const rosters = (info.rosters || []).filter((r) => r.seatable !== undefined);
+  const hasCourses = rosters.length > 0 && (info.students || []).length >= 0 && info.course;
+
+  selectEl.innerHTML = "";
+  if (!rosters.length) {
+    const opt = document.createElement("option");
+    opt.textContent = "— no courses yet —"; opt.value = "";
+    selectEl.appendChild(opt); selectEl.disabled = true;
+  } else {
+    for (const r of rosters) {
+      const opt = document.createElement("option");
+      opt.value = r.key; opt.textContent = r.label;
+      if (r.key === info.activeKey) opt.selected = true;
+      selectEl.appendChild(opt);
+    }
+  }
+
+  selectEl.addEventListener("change", () => {
+    if (selectEl.value) window.CalmAuth.setActive(selectEl.value);
+  });
+
+  if (removeBtn) {
+    removeBtn.classList.toggle("is-hidden", !info.course);
+    removeBtn.addEventListener("click", () => {
+      if (info.course && confirm('Remove "' + (info.course.label) + '" from your courses?')) {
+        window.CalmAuth.removeCourse(info.activeKey);
+      }
+    });
+  }
+
+  const seatable = (info.students || []).length;
+  const selected = selectEl.selectedOptions[0] ? selectEl.selectedOptions[0].textContent : "";
+  if (statusEl) {
+    statusEl.innerHTML = info.course
+      ? `Showing <span class="ok">${escapeHtml(selected)}</span> — ${seatable} seatable.`
+      : `<span class="empty-hint">No course loaded — click <strong>Upload course PDF…</strong> to add one.</span>`;
+  }
+  if (courseTag) courseTag.textContent = info.course && info.course.label ? info.course.label : "";
+})();
+</script>
+
+<!-- Upload flow (parses the PDF in the browser; ES module). -->
+<script type="module" src="src/upload.js"></script>
+</body>
+</html>

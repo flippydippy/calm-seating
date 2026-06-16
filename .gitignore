@@ -1,0 +1,16 @@
+# ── Student PII — MUST NOT be committed (public repo) ──
+*.pdf
+Dhamma-*.json
+Dhamma-*.csv
+Registration*.csv
+Registration*.pdf
+students*.json
+seating-chart.png
+
+# ── Design source bundles (only extracted assets we use get committed) ──
+Design-Standards/
+
+# ── tooling / local ──
+node_modules/
+.claude/
+package-lock.json
