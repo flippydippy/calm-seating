@@ -3,7 +3,7 @@
 // Classic script: exposes window.CS_USERS for the pre-engine auth layer.
 window.CS_USERS = [
   {
-    "username": "yar",
+    "username": "yars",
     "role": "admin",
     "salt": "a8d6d9cd17fde282124c6aa007337e03",
     "hash": "4bd225e7eb90c8ef9c63d95b74ef0c1aedbcb0ab6383bb4a6d6acc80f29f4c2d",
