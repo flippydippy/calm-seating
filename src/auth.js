@@ -102,7 +102,11 @@
         try { ok = await verify(uEl.value.trim().toLowerCase(), pEl.value); }
         catch (err) { errEl.textContent = "Login error: " + err.message; return; }
         if (!ok) { errEl.textContent = "Incorrect username or password."; pEl.value = ""; return; }
-        try { sessionStorage.setItem(SESSION, uEl.value.trim().toLowerCase()); sessionStorage.removeItem(VIEWAS); } catch (e) {}
+        try {
+          sessionStorage.setItem(SESSION, uEl.value.trim().toLowerCase());
+          sessionStorage.removeItem(VIEWAS);
+          sessionStorage.setItem("cs:freshLogin", "1"); // land on the setup "home", not a restored chart
+        } catch (e) {}
         location.reload();
       });
     }

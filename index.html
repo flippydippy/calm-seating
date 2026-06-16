@@ -1730,6 +1730,15 @@
 
   els.editSetupBtn.addEventListener("click", onEditSetup);
   els.cancelBtn.addEventListener("click", onCancelSetup);
+  // Logo + title act as a "home" link back to the setup screen.
+  document.querySelectorAll(".app-header .brand-logo, .app-header h1").forEach((el) => {
+    el.style.cursor = "pointer";
+    el.setAttribute("role", "link");
+    el.setAttribute("tabindex", "0");
+    el.setAttribute("title", "Back to setup");
+    el.addEventListener("click", onEditSetup);
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onEditSetup(); } });
+  });
   els.openBtn.addEventListener("click", onOpenSaved);
   els.flipBtn.addEventListener("click", onFlip);
   els.pinAllBtn.addEventListener("click", onPinAll);
@@ -1758,13 +1767,20 @@
   // after the IIFE ran, leaving submit.disabled and the preview stale.
   window.addEventListener("pageshow", renderPreview);
 
-  // Try to restore prior session.
+  // Try to restore prior session. A fresh login lands on the setup "home"
+  // (the saved chart stays available via "Open saved"); a plain refresh while
+  // working restores the chart so work isn't lost.
+  let freshLogin = false;
+  try {
+    freshLogin = sessionStorage.getItem("cs:freshLogin") === "1";
+    if (freshLogin) sessionStorage.removeItem("cs:freshLogin");
+  } catch {}
   const restored = loadPersistedState();
   if (restored) {
     charts.F = restored.charts.F;
     charts.M = restored.charts.M;
     const g = restored.lastGender;
-    if (g && charts[g]) {
+    if (g && charts[g] && !freshLogin) {
       loadChartIntoState(g);
       hideSetup();
       renderGrid();
