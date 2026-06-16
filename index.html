@@ -1315,8 +1315,11 @@
       const newRow = new Array(totalCols).fill(null).map(() => ({ empty: true, isExtra: false, name: "", note: "" }));
       state.seats.push(newRow);
       state.rows += 1;
-      // The new top row in array terms is state.rows-1; visual gridRow = 1.
-      toRow = 1;
+      // The new row is the top visual row — render it now (the fall-through fill
+      // logic would no-op, since these cells are already empty boxes, not null).
+      renderGrid();
+      persistState();
+      return;
     }
     if (toRow > state.rows) {
       // New row below (lower letter would be needed). Adding "below A" doesn't
