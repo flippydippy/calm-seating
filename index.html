@@ -224,8 +224,8 @@
   .seat--old { border-width: 3px; }
   .seat--new { border-width: 1px; }
   .seat--empty { background: #ebebeb; border-style: dashed; opacity: .9; }
-  /* Extra seat at the end of a row: very thick top edge, regular sides. */
-  .seat--extra { border-top-width: 6px !important; border-top-style: solid !important; }
+  /* Chair marker: very thick top edge, regular sides. */
+  .seat--chair { border-top-width: 6px !important; border-top-style: solid !important; }
   /* Duplicates created via shift-drag: dashed borders on both copies. */
   .seat--duplicate { border-style: dashed; }
   /* Drag affordances */
@@ -693,6 +693,7 @@
       for (const cell of row) {
         if (cell == null) continue;
         if (typeof cell !== "object") return false;
+        if (typeof cell.isChair !== "undefined" && typeof cell.isChair !== "boolean") return false;
         if (typeof cell.studentId === "string") {
           if (typeof cell.pinned !== "boolean") return false;
         } else if (cell.empty === true) {
@@ -1018,15 +1019,15 @@
       const row = [];
       for (let c = 0; c < cols; c++) {
         if (i < fill.length) {
-          row.push({ studentId: fill[i].id, pinned: false, note: "" });
+          row.push({ studentId: fill[i].id, pinned: false, note: "", isChair: false });
           i++;
         } else {
           // Visible empty box (dashed). User can type a name or drop a student onto it.
-          row.push({ empty: true, isExtra: false, name: "", note: "" });
+          row.push({ empty: true, isExtra: false, name: "", note: "", isChair: false });
         }
       }
       // Always one extra editable seat at the end of each row (thick top border).
-      row.push({ empty: true, isExtra: true, name: "", note: "" });
+      row.push({ empty: true, isExtra: true, name: "", note: "", isChair: true });
       seats.push(row);
     }
     const overflow = fill.slice(i);
@@ -1113,12 +1114,34 @@
     return { gridRow, gridCol };
   }
 
+  function hasChairMarker(cell) {
+    if (!cell) return false;
+    if (typeof cell.isChair === "boolean") return cell.isChair;
+    return !!(cell.empty && cell.isExtra);
+  }
+
+  function copySeatWithChairMarker(cell, isChair) {
+    return cell ? { ...cell, isChair } : cell;
+  }
+
+  function hasSeatName(cell) {
+    return !!(cell && (cell.studentId || (cell.empty && (cell.name || "").trim())));
+  }
+
+  function isBlankSeat(cell) {
+    return !!(cell && cell.empty && !(cell.name || "").trim());
+  }
+
+  function blankSeatWithChairMarker(isChair) {
+    return { empty: true, isExtra: false, name: "", note: "", isChair };
+  }
+
   function renderSeat(r, c) {
     const seatState = state.seats[r][c];
     // null cell ⇒ no box rendered (X-deleted hole).
     if (seatState === null) return null;
 
-    const isExtra  = !!(seatState && seatState.empty && seatState.isExtra);
+    const isChair  = hasChairMarker(seatState);
     const isEmpty  = !!(seatState && seatState.empty);
     const isFilled = !isEmpty;
 
@@ -1127,6 +1150,9 @@
     el.dataset.row = String(r);
     el.dataset.col = String(c);
     el.dataset.seatLabel = seatLabel(r, c);
+    el.title = isChair ? "Double-click to remove chair marker" : "Double-click to mark as chair";
+    el.addEventListener("dblclick", onSeatDoubleClick);
+    if (isChair) el.classList.add("seat--chair");
 
     // ---- Header: label (left) | pin | delete (right) ----
     const head = document.createElement("div");
@@ -1203,7 +1229,6 @@
       if (seatState.note) noteEl.textContent = seatState.note;
     } else if (isEmpty) {
       el.classList.add("seat--empty");
-      if (isExtra) el.classList.add("seat--extra");
 
       // Editable name input — types directly into the empty box.
       const input = document.createElement("input");
@@ -1251,7 +1276,7 @@
     return el;
   }
 
-  // --- Edit note / delete seat / type empty name ---
+  // --- Edit chair marker / note / delete seat / type empty name ---
   function coordsFromEvent(e) {
     const seatEl = e.currentTarget.closest(".seat");
     if (!seatEl) return null;
@@ -1259,6 +1284,17 @@
     const c = Number(seatEl.dataset.col);
     if (!Number.isInteger(r) || !Number.isInteger(c)) return null;
     return { r, c };
+  }
+
+  function onSeatDoubleClick(e) {
+    if (e.target.closest(".pin-btn, .delete-btn, .seat-plus, .seat-name-input")) return;
+    const xy = coordsFromEvent(e);
+    if (!xy) return;
+    const cell = state.seats?.[xy.r]?.[xy.c];
+    if (!cell) return;
+    cell.isChair = !hasChairMarker(cell);
+    renderGrid();
+    persistState();
   }
 
   function onEditClick(e) {
@@ -1284,7 +1320,7 @@
       // Student seat: move them to the Removed panel; leave an empty box behind
       // so the slot stays usable for drag/edit.
       if (!state.removed.includes(cell.studentId)) state.removed.push(cell.studentId);
-      state.seats[xy.r][xy.c] = { empty: true, isExtra: false, name: "", note: "" };
+      state.seats[xy.r][xy.c] = blankSeatWithChairMarker(hasChairMarker(cell));
     } else {
       // Empty or extra seat: delete the box entirely (hole).
       state.seats[xy.r][xy.c] = null;
@@ -1312,7 +1348,13 @@
     // Out of bounds → extend the grid in that direction.
     if (toRow < 1) {
       // New row above (visually higher letter → higher array index).
-      const newRow = new Array(totalCols).fill(null).map(() => ({ empty: true, isExtra: false, name: "", note: "" }));
+      const newRow = new Array(totalCols).fill(null).map(() => ({
+        empty: true,
+        isExtra: false,
+        name: "",
+        note: "",
+        isChair: false,
+      }));
       state.seats.push(newRow);
       state.rows += 1;
       // The new row is the top visual row — render it now (the fall-through fill
@@ -1340,7 +1382,7 @@
         // It's simpler to just push to one end based on whether onLeft matches
         // the array's left side for this orientation.
         const insertAtArrayStart = (state.gender === "F") ? onLeft : !onLeft;
-        const newCell = { empty: true, isExtra: false, name: "", note: "" };
+        const newCell = { empty: true, isExtra: false, name: "", note: "", isChair: false };
         if (extrasRight) {
           // extras are at index cols (array end). Insert before them on the
           // proper side: array start for one side, array index cols for other.
@@ -1367,7 +1409,7 @@
         const p = visualGridPos(rr, cc, state.rows, state.cols, state.gender, state.flipped);
         if (p.gridRow === toRow && p.gridCol === toCol) {
           if (state.seats[rr][cc] == null) {
-            state.seats[rr][cc] = { empty: true, isExtra: false, name: "", note: "" };
+            state.seats[rr][cc] = { empty: true, isExtra: false, name: "", note: "", isChair: false };
             renderGrid();
             persistState();
           }
@@ -1433,15 +1475,16 @@
   // Outcome semantics:
   //   "self"      — same source/target, no indicator
   //   "block"     — drop is allowed but rejected (red outline + shake)
+  //   "move"      — source has a name/student, target is blank; source becomes blank
   //   "allow"     — normal swap of cell contents
-  //   "duplicate" — shift held, copy source's student into an empty target
-  //   "restore"   — source is a Removed chip, target is an empty seat
+  //   "duplicate" — shift held, copy source's student into a blank target
+  //   "restore"   — source is a Removed chip, target is a blank seat
   // Pin policy: "do not touch" — either endpoint being pinned blocks the swap.
   function dropOutcome(src, tgtR, tgtC, shiftKey) {
     const tgt = state.seats?.[tgtR]?.[tgtC];
     if (src.kind === "removed") {
-      // Removed chip can land on any empty seat (not a hole, not a student).
-      if (tgt && tgt.empty) return "restore";
+      // Removed chip can land on any blank seat (not a hole, not a named/student seat).
+      if (isBlankSeat(tgt)) return "restore";
       return "block";
     }
     // Source is a seat
@@ -1450,9 +1493,9 @@
     if ((srcCell && srcCell.pinned) || (tgt && tgt.pinned)) return "block";
     if (shiftKey) {
       const srcIsStudent = !!(srcCell && srcCell.studentId);
-      const tgtIsEmpty   = !!(tgt && tgt.empty);
-      return (srcIsStudent && tgtIsEmpty) ? "duplicate" : "block";
+      return (srcIsStudent && isBlankSeat(tgt)) ? "duplicate" : "block";
     }
+    if (hasSeatName(srcCell) && isBlankSeat(tgt)) return "move";
     return "allow";
   }
 
@@ -1480,7 +1523,7 @@
     const tr = Number(targetSeatEl.dataset.row);
     const tc = Number(targetSeatEl.dataset.col);
     const outcome = dropOutcome(dragSrc, tr, tc, dragSrc.shift);
-    const positive = outcome === "allow" || outcome === "duplicate" || outcome === "restore";
+    const positive = outcome === "allow" || outcome === "move" || outcome === "duplicate" || outcome === "restore";
     if (positive) targetSeatEl.classList.add("seat--dragover");
     else if (outcome === "block") targetSeatEl.classList.add("seat--blocked");
   }
@@ -1504,19 +1547,27 @@
     const outcome = dropOutcome(dragSrc, tr, tc, dragSrc.shift);
     if (outcome === "self") return;
     if (outcome === "block") { shakeSrc(); return; }
+    const targetChair = hasChairMarker(state.seats?.[tr]?.[tc]);
     if (outcome === "restore") {
       const id = dragSrc.studentId;
-      state.seats[tr][tc] = { studentId: id, pinned: false, note: "" };
+      state.seats[tr][tc] = { studentId: id, pinned: false, note: "", isChair: targetChair };
       const idx = state.removed.indexOf(id);
       if (idx >= 0) state.removed.splice(idx, 1);
     } else if (outcome === "duplicate") {
       const src = state.seats[dragSrc.r][dragSrc.c];
-      state.seats[tr][tc] = { studentId: src.studentId, pinned: false, note: "" };
+      state.seats[tr][tc] = { studentId: src.studentId, pinned: false, note: "", isChair: targetChair };
+    } else if (outcome === "move") {
+      const src = state.seats[dragSrc.r][dragSrc.c];
+      const sourceChair = hasChairMarker(src);
+      state.seats[dragSrc.r][dragSrc.c] = blankSeatWithChairMarker(sourceChair);
+      state.seats[tr][tc] = copySeatWithChairMarker(src, targetChair);
     } else {
       // "allow" — swap contents
       const src = state.seats[dragSrc.r][dragSrc.c];
-      state.seats[dragSrc.r][dragSrc.c] = state.seats[tr][tc];
-      state.seats[tr][tc] = src;
+      const tgt = state.seats[tr][tc];
+      const sourceChair = hasChairMarker(src);
+      state.seats[dragSrc.r][dragSrc.c] = copySeatWithChairMarker(tgt, sourceChair);
+      state.seats[tr][tc] = copySeatWithChairMarker(src, targetChair);
     }
     renderGrid();
     renderRemovedPanel();
